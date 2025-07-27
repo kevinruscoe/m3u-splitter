@@ -1,6 +1,6 @@
-# M3U Splitter (Rust Version)
+# M3U Splitter
 
-Converted from Python version by lakeconstance78@wolke7.net
+Inspired by https://github.com/lakeconstance78/iptv-tools
 
 ## Description
 
