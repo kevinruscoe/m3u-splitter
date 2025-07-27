@@ -23,8 +23,8 @@ struct Args {
     #[arg(short, long)]
     input: String,
     
-    /// Output directory for split files (defaults to /output)
-    #[arg(short, long, default_value = "/output")]
+    /// Output directory for split files (defaults to ./output)
+    #[arg(short, long, default_value = "./output")]
     output: String,
 }
 
