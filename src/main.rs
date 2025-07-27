@@ -40,38 +40,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create output directory if it doesn't exist
     fs::create_dir_all(&args.output)?;
     
-    // Read input file
-    println!("Reading input file: {}", args.input);
-    let content = fs::read_to_string(&args.input)
-        .map_err(|e| format!("Failed to read input file '{}': {}", args.input, e))?;
+    // Check file size to determine processing method
+    let metadata = fs::metadata(&args.input)?;
+    let file_size_mb = metadata.len() as f64 / (1024.0 * 1024.0);
     
-    // Display processing information
-    println!("----------------------------------------------");
-    println!("Splitting {} -> {}", args.input, args.output);
+    println!("📄 Input file: {} ({:.1} MB)", args.input, file_size_mb);
+    println!("📁 Output directory: {}", args.output);
     println!("----------------------------------------------");
     
-    // Process M3U content with progress callback
-    let stats = process_m3u_content_with_callback(
-        &content, 
-        Path::new(&args.output),
-        |channel_name, group_name, current, total| {
-            let percentage = (current as f64 / total as f64 * 100.0) as u32;
-            let group_display = if group_name.trim().is_empty() { 
-                "ungrouped" 
-            } else { 
-                group_name 
-            };
-            
-            println!(
-                "[{:3}%] ({:4}/{:4}) {} -> {} group", 
-                percentage, 
-                current, 
-                total, 
-                channel_name.trim(),
-                group_display
-            );
-        }
-    ).map_err(|e| format!("Failed to process M3U content: {e}"))?;
+    let stats = if file_size_mb > 10.0 {
+        // Use streaming approach for large files (>10MB)
+        println!("🔄 Processing large file using streaming method...");
+        println!("----------------------------------------------");
+        
+        process_m3u_file_streaming(
+            Path::new(&args.input),
+            Path::new(&args.output),
+            |channel_name, group_name, processed_count| {
+                if processed_count % 1000 == 0 {
+                    let group_display = if group_name.trim().is_empty() { 
+                        "ungrouped" 
+                    } else { 
+                        group_name 
+                    };
+                    
+                    println!(
+                        "⚡ Processed: {:6} channels | Current: {} -> {} group", 
+                        processed_count,
+                        channel_name.trim(),
+                        group_display
+                    );
+                }
+            }
+        ).map_err(|e| format!("Failed to process M3U file: {e}"))?
+    } else {
+        // Use in-memory approach for smaller files
+        println!("🔄 Processing file in memory...");
+        
+        let content = fs::read_to_string(&args.input)
+            .map_err(|e| format!("Failed to read input file '{}': {}", args.input, e))?;
+        
+        println!("----------------------------------------------");
+        
+        process_m3u_content_with_callback(
+            &content, 
+            Path::new(&args.output),
+            |channel_name, group_name, current, total| {
+                let percentage = (current as f64 / total as f64 * 100.0) as u32;
+                let group_display = if group_name.trim().is_empty() { 
+                    "ungrouped" 
+                } else { 
+                    group_name 
+                };
+                
+                println!(
+                    "[{:3}%] ({:4}/{:4}) {} -> {} group", 
+                    percentage, 
+                    current, 
+                    total, 
+                    channel_name.trim(),
+                    group_display
+                );
+            }
+        ).map_err(|e| format!("Failed to process M3U content: {e}"))?
+    };
     
     // Display final statistics
     println!("----------------------------------------------");

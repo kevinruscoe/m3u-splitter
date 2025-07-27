@@ -212,6 +212,75 @@ where
     Ok(stats)
 }
 
+/// Process M3U file by streaming line by line for better memory efficiency with large files
+pub fn process_m3u_file_streaming<F>(
+    input_path: &Path,
+    output_dir: &Path,
+    mut progress_callback: F
+) -> Result<ProcessingStats, M3uError>
+where
+    F: FnMut(&str, &str, usize), // (channel_name, group_name, processed_count)
+{
+    let file = File::open(input_path)?;
+    let reader = BufReader::new(file);
+    
+    let mut stats = ProcessingStats::new();
+    let mut current_extinf_line = String::new();
+    let mut processed_count = 0;
+    
+    // First pass: count total EXTINF entries for progress tracking
+    let total_count = {
+        let count_file = File::open(input_path)?;
+        let count_reader = BufReader::new(count_file);
+        count_reader.lines()
+            .map(|line| line.unwrap_or_default())
+            .filter(|line| line.starts_with("#EXTINF"))
+            .count()
+    };
+    
+    stats.total_channels = total_count;
+    
+    // Compile regexes for parsing
+    let group_regex = Regex::new(r#"group-title="(.*?)""#)?;
+    let name_regex = Regex::new(r#",(.*)$"#)?;
+    
+    for line in reader.lines() {
+        let line = line?;
+        let line = line.trim();
+        
+        if line.starts_with("#EXTINF") {
+            current_extinf_line = line.to_string();
+        } else if !line.is_empty() && !line.starts_with("#") && !current_extinf_line.is_empty() {
+            // This should be a URL following an EXTINF line
+            let entry = format!("{}\n{}", current_extinf_line, line);
+            
+            // Extract group-title and channel name using regex
+            if let Some(group_match) = group_regex.captures(&current_extinf_line) {
+                if let Some(name_match) = name_regex.captures(&current_extinf_line) {
+                    let group_name = group_match.get(1).map(|m| m.as_str()).unwrap_or("");
+                    let channel_name = name_match.get(1).map(|m| m.as_str()).unwrap_or("");
+                    
+                    processed_count += 1;
+                    progress_callback(channel_name, group_name, processed_count);
+                    
+                    let file_path = generate_group_filename(group_name, output_dir);
+                    let needs_header = ensure_m3u_header(&file_path)?;
+                    
+                    write_channel_entry(&entry, &file_path, needs_header)?;
+                    
+                    // Update statistics
+                    stats.processed_channels += 1;
+                    *stats.groups_created.entry(group_name.to_string()).or_insert(0) += 1;
+                }
+            }
+            
+            current_extinf_line.clear();
+        }
+    }
+    
+    Ok(stats)
+}
+
 /// Process M3U content and split into separate files by group
 pub fn process_m3u_content(content: &str, output_dir: &Path) -> Result<(), M3uError> {
     process_m3u_content_with_callback(content, output_dir, |_, _, _, _| {})
