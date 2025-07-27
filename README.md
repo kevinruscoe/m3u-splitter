@@ -1,0 +1,140 @@
+# M3U Splitter (Rust Version)
+
+Converted from Python version by lakeconstance78@wolke7.net
+
+## Description
+
+This program splits M3U playlist files into separate files organized by group title.
+
+## Features
+
+- Reads M3U playlist files with channel information
+- Extracts group titles and channel names
+- Creates separate M3U files for each group
+- Automatically adds `#EXTM3U` header if missing
+- Sanitizes filenames by replacing invalid characters
+- Uses title case for group names and filenames
+
+## Requirements
+
+- **Pre-built Binary**: No additional requirements - the `m3u-splitter-macos` binary is self-contained
+- **Building from Source**: Rust (with cargo) and dependencies: `regex` and `clap` crates
+
+## Binary Information
+
+- **File**: `m3u-splitter-macos`
+- **Architecture**: ARM64 (Apple Silicon) / x86_64 compatible
+- **Size**: ~2.7MB
+- **Type**: Self-contained executable (no external dependencies required)
+
+## Usage
+
+### Using the Pre-built macOS Binary
+
+```bash
+# Download or copy the m3u-splitter-macos binary to your desired location
+# Make it executable (if needed)
+chmod +x m3u-splitter-macos
+
+# Split M3U file with output directory
+./m3u-splitter-macos -i input.m3u -o output_folder
+
+# Split to current directory
+./m3u-splitter-macos -i input.m3u
+
+# Show help
+./m3u-splitter-macos --help
+```
+
+### Building from Source
+
+```bash
+# Build the program
+cargo build --release
+
+# Run tests
+cargo test
+
+# Run with input file and output directory
+cargo run -- -i input.m3u -o output_folder
+
+# Run with just input file (outputs to current directory)
+cargo run -- -i input.m3u
+
+# Or run the compiled binary directly
+./target/release/m3u-splitter -i input.m3u -o output_folder
+
+# Show help
+cargo run -- --help
+```
+
+### Command Line Options
+
+- `-i, --input <INPUT>`: Input M3U file to split (required)
+- `-o, --output <OUTPUT>`: Output directory for split files (optional, defaults to current directory)
+- `-h, --help`: Show help message
+- `-V, --version`: Show version information
+
+## Input Format
+
+The program expects M3U files with the following format:
+
+```
+#EXTM3U
+#EXTINF:-1 group-title="Sports",ESPN
+https://example.com/espn.m3u8
+#EXTINF:-1 group-title="News",CNN
+https://example.com/cnn.m3u8
+```
+
+## Output
+
+- Creates separate `.m3u` files for each group in the specified output directory
+- Files are named using the group title (e.g., `Sports.m3u`, `News.m3u`)
+- Invalid filename characters are replaced with underscores
+- Empty groups are saved to `m3u_emptygroup.m3u`
+- Automatically creates the output directory if it doesn't exist
+
+## Changes from Python Version
+
+- Uses Rust's `regex` crate for pattern matching
+- Uses `clap` for command-line argument parsing
+- Improved error handling with `Result` types
+- More explicit memory management
+- Compile-time safety guarantees
+
+## Testing
+
+The project includes comprehensive tests:
+
+### Unit Tests
+
+- **`to_title_case`** function testing
+- **`sanitize_filename`** function testing
+- **`process_m3u_content`** core logic testing
+- **Empty group handling** testing
+- **#EXTM3U header insertion** testing
+
+### Integration Tests
+
+- **CLI integration** testing with real files
+- **Help command** testing
+- **Version command** testing
+
+### Running Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run only unit tests
+cargo test --lib
+
+# Run only integration tests
+cargo test --test integration_tests
+
+# Run tests with output
+cargo test -- --nocapture
+```
+
+All tests use temporary directories and files to avoid affecting the file system.
