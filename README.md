@@ -2,7 +2,10 @@
 
 Inspired by https://github.com/lakeconstance78/iptv-tools
 
-## Description
+## - `-i, --input <INPUT>`: Input M3U file to split (required)
+
+- `-o, --output <OUTPUT>`: Output directory for split files (optional, defaults to `./output`)
+- `-h, --help`: Show help messagecription
 
 This program splits M3U playlist files into separate files organized by group title.
 
@@ -17,34 +20,41 @@ This program splits M3U playlist files into separate files organized by group ti
 
 ## Requirements
 
-- **Pre-built Binary**: No additional requirements - the `m3u-splitter-macos` binary is self-contained
+- **Pre-built Binary**: No additional requirements - the pre-built binaries are self-contained
 - **Building from Source**: Rust (with cargo) and dependencies: `regex` and `clap` crates
 
 ## Binary Information
 
-- **File**: `m3u-splitter-macos`
-- **Architecture**: ARM64 (Apple Silicon) / x86_64 compatible
-- **Size**: ~2.7MB
-- **Type**: Self-contained executable (no external dependencies required)
+Pre-built binaries are available in the `releases/` directory:
+
+- **macOS Universal**: `m3u-splitter-macos-universal` (~2.8MB, works on Intel and Apple Silicon)
+- **macOS ARM64**: `m3u-splitter-macos-arm64` (~2.8MB, Apple Silicon only)
+- **macOS x64**: `m3u-splitter-macos-x64` (~2.9MB, Intel only)
+- **Windows**: Build instructions provided in `releases/README.md`
+- **Linux**: Build instructions provided in `releases/README.md`
+
+All binaries are self-contained executables with no external dependencies.
 
 ## Usage
 
-### Using the Pre-built macOS Binary
+### Using Pre-built Binaries
 
 ```bash
-# Download or copy the m3u-splitter-macos binary to your desired location
+# macOS - Download or copy the appropriate binary to your desired location
 # Make it executable (if needed)
-chmod +x m3u-splitter-macos
+chmod +x m3u-splitter-macos-universal
 
 # Split M3U file with output directory
-./m3u-splitter-macos -i input.m3u -o output_folder
+./m3u-splitter-macos-universal -i input.m3u -o output_folder
 
-# Split to current directory
-./m3u-splitter-macos -i input.m3u
+# Split to current directory (default: ./output)
+./m3u-splitter-macos-universal -i input.m3u
 
 # Show help
-./m3u-splitter-macos --help
+./m3u-splitter-macos-universal --help
 ```
+
+For Windows and Linux users, see build instructions in `releases/README.md`.
 
 ### Building from Source
 
